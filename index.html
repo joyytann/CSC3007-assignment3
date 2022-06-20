@@ -1,0 +1,152 @@
+<html>
+<head>
+    <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+    <h2 id='title'>To find out which subsdistricts have the most population in SG</h2>
+  <svg class="svg">
+  </svg>
+  <div class="tooltip"></div>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+    let width = 1200, height = 800;
+    var margin = {top: 50, right: 100, bottom: 70, left: 100};
+    let svg = d3.select("svg")
+        .attr('viewBox', '0 0 '+ (width) + ' ' + (height))
+        .style("margin-top","40px");
+
+    // Map and projection
+    let projection = d3.geoEquirectangular();
+    let geopath = d3.geoPath().projection(projection);
+    let centered, world;
+    const path = d3.geoPath();
+
+    Promise.all([d3.json("https://chi-loong.github.io/CSC3007/assignments/sgmap.json"), 
+    d3.csv("https://chi-loong.github.io/CSC3007/assignments/population2021.csv")]).then(data => {
+        //console.log(data);
+    
+    var sgmapArray = data[0].features;
+    var populationArray = data[1];
+    console.log(sgmapArray);
+    console.log(populationArray);
+    for(var i = 0; i<sgmapArray.length;i++){
+
+        if (sgmapArray[i].Population == undefined || sgmapArray.Population == "undefined"){
+            sgmapArray[i].Population = "-";
+        }
+    }
+    const domain = [0, 10000, 20000, 30000,40000,50000,60000,70000,80000,90000,100000];
+    const colorScale = d3.scaleThreshold()
+	.domain(domain)
+	.range(["#f7f4f9","#eae3f0","#dcc9e2","#d0aad2","#d08ac2","#dd63ae","#e33890","#d71c6c","#b70b4f","#8f023a","#67001f"]);
+
+    res = sgmapArray.map(x => Object.assign(x, populationArray.find(y => y.Subzone.toUpperCase() == x.properties.Name.toUpperCase())));
+   // console.log(res);
+   console.log(colorScale.range());
+  
+
+     var projection = d3.geoMercator()
+    .center([103.851959, 1.290270])
+    .fitExtent([[20, 20], [980, 580]], data[0]);
+
+        let geopath = d3.geoPath().projection(projection);
+        
+        svg.append("g")
+            .attr("id", "districts")
+            .selectAll("path")
+            .data(sgmapArray)
+            .enter()
+            .append("path")
+            .attr("d", geopath)
+            .attr("fill", function(d) {
+			return colorScale(d.Population);
+		})
+            .attr("stroke", "grey")
+            .attr("stroke-width", 0.5)
+            .attr("margin-top","40px")
+            .on("click", click)
+            .on("mouseover", (event, d) => {
+               // console.log(d);
+            d3.select(event.currentTarget)
+            .attr("stroke", "#4690B5")
+            .attr("stroke-width", 2);
+            d3.select(".tooltip").html("Subs district: " +  d.properties.Name +"<br/> Population: " + d.Population)
+            .style("visibility", "visible")
+            .style("left", (event.pageX) + "px")
+            .style("top", (event.pageY) + "px");
+        })
+        .on("mouseout", (event, d) => {
+            d3.select(event.currentTarget).attr("stroke", "none");  
+            d3.select(".tooltip")
+            .style("visibility", "hidden");
+            
+        });
+
+    // Legend
+	const legend = svg.append("g")
+		.attr("id", "legend");
+
+	const legend_entry = legend.selectAll("g.legend")
+		.data(domain)
+		.enter().append("g")
+		.attr("class", "legend_entry")
+        .attr("transform", function (d, i) { return "translate(" + i * 30 + ",0)"; });
+
+	const ls_w = 50,
+		ls_h = 20;
+
+	legend_entry.append("rect")
+		.attr("x",  function(d, i) {
+			return width/2 + (i * ls_h);
+		})
+		.attr("y",height/2 + 30)
+        // .style("margin-left","10px")
+		.attr("width", ls_w)
+		.attr("height", ls_h)
+		.style("fill", function(d) {
+			return colorScale(d-1);
+		})
+		.style("opacity", 0.8);
+
+	legend_entry.append("text")
+		.attr("x",  function(d, i) {
+			return width/2 +(i * ls_h)})
+		.attr("y", height/2 + 80)
+        // .style("margin-left","10px")
+		.style("font-size",10)
+        .text(function (d, i) { return d; });
+
+
+	legend.append("text").attr("x", width/2).attr("y", height/2).text("Population");
+    // Zoom functionality
+    function click(event,d) {
+    var x, y, k;
+
+    if (d && centered !== d) {
+        console.log(d)
+        var centroid = path.centroid(d);
+        console.log(centroid);
+        x = -(centroid[0]* 6);
+        y = (centroid[1]* 6);
+        k = 3;
+        centered = d;
+    } else {
+        x = 0;
+        y = 0;
+        k = 1;
+        centered = null;
+    }
+    svg.selectAll("path")
+        .classed("active", centered && function(d) { return d === centered; });
+
+    svg.transition()
+        .duration(750)
+        .attr("transform", "translate(" + x + "," + y + ") scale(" + k + ")" );
+    
+    }
+})
+
+</script>
+</body>
+</html>
+        

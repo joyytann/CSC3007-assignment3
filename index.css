@@ -1,0 +1,17 @@
+.tooltip{
+    position: absolute;
+    background:#fff;
+    visibility: hidden;
+    padding: 10px;
+    border:solid 1px black;
+    border-radius:10px ;
+    text-transform: capitalize;
+}
+
+#title{
+    text-align: center;
+}
+.svg{
+    text-align: center;
+    margin: auto;
+}
